@@ -32,6 +32,7 @@ export class GoogleOAuth2Strategy extends PassportStrategy(Strategy) {
       photos: { value: string }[];
     },
   ): GoogleOAuthPayload {
+    console.log('profile: ', profile);
     const { name, emails, photos } = profile;
     return {
       email: emails[0].value,

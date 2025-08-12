@@ -37,6 +37,7 @@ export class AuthService {
     const newUser = await this.db.user.create({
       data: {
         email: user.email,
+        name: user.firstName + ' ' + user.lastName,
       },
     });
     const jwtToken = this.jwtService.sign(

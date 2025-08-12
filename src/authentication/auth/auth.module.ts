@@ -20,4 +20,3 @@ import { GoogleOAuth2Strategy } from '../passport-strategies/google-oauth2/googl
   ],
 })
 export class AuthModule {}
-console.log('JWT Secret:', process.env.JWT_SECRET || 'thequickbrownfox');
