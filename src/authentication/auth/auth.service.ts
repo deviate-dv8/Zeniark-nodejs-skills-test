@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/db/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../db/prisma/prisma.service';
 import { GoogleOAuth20Response } from '../passport-strategies/google-oauth2/googleoauth2.strategy';
 
 @Injectable()
