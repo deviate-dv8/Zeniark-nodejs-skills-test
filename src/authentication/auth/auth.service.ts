@@ -16,13 +16,18 @@ export class AuthService {
       },
     });
     if (userInfo) {
-      const jwtToken = this.jwtService.sign({
-        sub: userInfo.id,
-        email: userInfo.email,
-        role: userInfo.role,
-        issuer: 'NoteApp',
-        audience: 'NoteApp',
-      });
+      const jwtToken = this.jwtService.sign(
+        {
+          sub: userInfo.id,
+          email: userInfo.email,
+          role: userInfo.role,
+        },
+
+        {
+          issuer: 'NoteApp',
+          audience: 'NoteApp',
+        },
+      );
       return {
         access_token: jwtToken,
         userInfo,
@@ -34,13 +39,17 @@ export class AuthService {
         email: user.email,
       },
     });
-    const jwtToken = this.jwtService.sign({
-      sub: newUser.id,
-      email: newUser.email,
-      role: newUser.role,
-      issuer: 'NoteApp',
-      audience: 'NoteApp',
-    });
+    const jwtToken = this.jwtService.sign(
+      {
+        sub: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+      },
+      {
+        issuer: 'NoteApp',
+        audience: 'NoteApp',
+      },
+    );
     return {
       access_token: jwtToken,
       userInfo: newUser,
