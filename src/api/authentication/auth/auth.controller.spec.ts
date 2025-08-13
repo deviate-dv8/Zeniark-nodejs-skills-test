@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { PrismaModule } from '../../db/prisma/prisma.module';
+import { PrismaModule } from '../../../db/prisma/prisma.module';
 import { JwtStrategy } from '../passport-strategies/jwt/jwt.strategy';
 import {
   GoogleOAuth20Response,

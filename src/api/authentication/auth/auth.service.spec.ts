@@ -6,14 +6,14 @@ import {
   GoogleOAuth20Response,
   GoogleOAuth2Strategy,
 } from '../passport-strategies/google-oauth2/googleoauth2.strategy';
-import { PrismaModule } from '../../db/prisma/prisma.module';
+import { PrismaModule } from '../../../db/prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { PrismaService } from '../../db/prisma/prisma.service';
+import { PrismaService } from '../../../db/prisma/prisma.service';
 import {
   MockPrismaService,
   prismaServiceMock,
-} from '../../test/prisma.service.mock';
+} from '../../../test/prisma.service.mock';
 
 describe('AuthService', () => {
   let service: AuthService;
