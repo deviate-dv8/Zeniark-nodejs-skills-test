@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../authentication/passport-strategies/jwt/jwt.auth
 import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strategy';
 import createValidationPipe from 'src/utils/createValidationPipe';
 import updateValidationPipe from 'src/utils/updateValidationPipe';
+import { RolesGuard } from 'src/guards/roles-guard/roles-guard.guard';
+import { Roles } from 'src/guards/roles-guard/roles.decorator';
 
 @Controller('api/notes')
 export class NotesController {
@@ -37,6 +39,8 @@ export class NotesController {
     return this.notesService.findAllByUser(req.user);
   }
   @Get('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN'])
   findALl() {
     return this.notesService.findAll();
   }

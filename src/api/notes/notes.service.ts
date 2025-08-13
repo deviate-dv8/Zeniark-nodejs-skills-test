@@ -28,10 +28,14 @@ export class NotesService {
   }
 
   async findOne(id: string, user: JwtResponse) {
+    const userInfo = await this.db.user.findUnique({ where: { id: user.id } }); // Updated this so it guarantees check for user.role
+    if (!userInfo) {
+      throw new NotFoundException('User Not Found');
+    }
     const note = await this.db.note.findFirst({
       where: {
         id,
-        ...(user.role == 'ADMIN' ? null : { userId: user.id }),
+        ...(userInfo.role == 'ADMIN' ? null : { userId: user.id }),
       },
     });
     if (!note) {
