@@ -1,0 +1,62 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateNoteDto } from './dto/create-note.dto';
+import { UpdateNoteDto } from './dto/update-note.dto';
+import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strategy';
+import { PrismaService } from 'src/db/prisma/prisma.service';
+
+@Injectable()
+export class NotesService {
+  constructor(private db: PrismaService) {}
+  create(createNoteDto: CreateNoteDto, user: JwtResponse) {
+    return this.db.note.create({
+      data: {
+        ...createNoteDto,
+        userId: user.id,
+      },
+    });
+  }
+
+  findAllByUser(user: JwtResponse) {
+    return this.db.note.findMany({
+      where: {
+        userId: user.id,
+      },
+    });
+  }
+  findAll() {
+    return this.db.note.findMany();
+  }
+
+  async findOne(id: string, user: JwtResponse) {
+    const note = await this.db.note.findFirst({
+      where: {
+        id,
+        ...(user.role == 'ADMIN' ? null : { userId: user.id }),
+      },
+    });
+    if (!note) {
+      throw new NotFoundException('Note Not Found');
+    }
+    return note;
+  }
+
+  async update(id: string, updateNoteDto: UpdateNoteDto, user: JwtResponse) {
+    const note = await this.findOne(id, user);
+    return this.db.note.update({
+      where: {
+        id: note.id,
+      },
+      data: updateNoteDto,
+    });
+  }
+
+  async remove(id: string, user: JwtResponse) {
+    const note = await this.findOne(id, user);
+    await this.db.note.delete({
+      where: {
+        id: note.id,
+      },
+    });
+    return note;
+  }
+}
