@@ -24,7 +24,6 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    console.log('Roles Guard', roles, userInfo.role);
     return roles.some((role) => userInfo.role === role);
   }
 

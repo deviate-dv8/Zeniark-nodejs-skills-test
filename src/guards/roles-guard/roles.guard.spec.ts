@@ -52,7 +52,11 @@ describe('RolesGuard', () => {
   it('should return true if user has the required role', async () => {
     jest.spyOn(reflector, 'get').mockReturnValue([$Enums.Role.ADMIN]);
     jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({
-      id: 1,
+      id: 'abcd',
+      email: 'user@example.com',
+      name: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
       role: $Enums.Role.ADMIN,
     });
 
