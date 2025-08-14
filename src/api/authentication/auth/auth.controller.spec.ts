@@ -16,7 +16,7 @@ describe('AuthController', () => {
   let authService: AuthService;
 
   const decodedTokenStub = {
-    userId: '689b9c4d7851c686e75dca4a',
+    id: '689b9c4d7851c686e75dca4a',
     email: 'example@email.com',
     role: 'USER',
   };

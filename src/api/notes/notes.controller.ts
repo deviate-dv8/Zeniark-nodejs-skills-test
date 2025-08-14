@@ -16,8 +16,8 @@ import { JwtAuthGuard } from '../authentication/passport-strategies/jwt/jwt.auth
 import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strategy';
 import createValidationPipe from 'src/utils/createValidationPipe';
 import updateValidationPipe from 'src/utils/updateValidationPipe';
-import { RolesGuard } from 'src/guards/roles-guard/roles-guard.guard';
 import { Roles } from 'src/guards/roles-guard/roles.decorator';
+import { RolesGuard } from 'src/guards/roles-guard/roles.guard';
 
 @Controller('api/notes')
 export class NotesController {
