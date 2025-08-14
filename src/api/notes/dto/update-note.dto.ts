@@ -9,4 +9,8 @@ export class UpdateNoteDto extends PartialType(CreateNoteDto) {
   @IsOptional()
   @IsString()
   content: string;
+
+  @IsString()
+  @IsOptional()
+  categoryId: string;
 }
