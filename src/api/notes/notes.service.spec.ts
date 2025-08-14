@@ -80,9 +80,9 @@ describe('NotesService', () => {
     expect(result).toEqual(sampleData);
   });
   it('findAll() - findAll should return all notes', async () => {
-    db.note.findMany.mockResolvedValue([sampleData]);
+    db.note.findMany.mockResolvedValue(sampleDatas);
     const result = await service.findAll();
-    expect(result).toEqual([sampleData]);
+    expect(result).toEqual(sampleDatas);
   });
   it('findAllByUser() - findAllByUser should return all notes based on user', async () => {
     db.note.findMany.mockResolvedValue([sampleData]);

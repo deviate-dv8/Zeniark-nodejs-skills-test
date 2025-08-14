@@ -8,16 +8,17 @@ import {
   Delete,
   UseGuards,
   Req,
+  Request,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { JwtAuthGuard } from '../authentication/passport-strategies/jwt/jwt.auth.guard';
-import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strategy';
 import createValidationPipe from 'src/utils/createValidationPipe';
 import updateValidationPipe from 'src/utils/updateValidationPipe';
 import { Roles } from 'src/guards/roles-guard/roles.decorator';
 import { RolesGuard } from 'src/guards/roles-guard/roles.guard';
+import type { RequestJwt } from 'src/utils/RequestJwt';
 
 @Controller('api/notes')
 export class NotesController {
@@ -28,14 +29,14 @@ export class NotesController {
   create(
     @Body(createValidationPipe)
     createNoteDto: CreateNoteDto,
-    @Req() req: { user: JwtResponse },
+    @Req() req: RequestJwt,
   ) {
     return this.notesService.create(createNoteDto, req.user);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAllByUser(@Req() req: { user: JwtResponse }) {
+  findAllByUser(@Req() req: RequestJwt) {
     return this.notesService.findAllByUser(req.user);
   }
   @Get('all')
@@ -47,7 +48,7 @@ export class NotesController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string, @Req() req: { user: JwtResponse }) {
+  findOne(@Param('id') id: string, @Req() req: RequestJwt) {
     return this.notesService.findOne(id, req.user);
   }
 
@@ -56,13 +57,13 @@ export class NotesController {
   update(
     @Param('id') id: string,
     @Body(updateValidationPipe) updateNoteDto: UpdateNoteDto,
-    @Req() req: { user: JwtResponse },
+    @Req() req: RequestJwt,
   ) {
     return this.notesService.update(id, updateNoteDto, req.user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: { user: JwtResponse }) {
+  remove(@Param('id') id: string, @Req() req: RequestJwt) {
     return this.notesService.remove(id, req.user);
   }
 }
