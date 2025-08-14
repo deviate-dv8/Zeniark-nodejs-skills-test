@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtResponse } from 'src/api/authentication/passport-strategies/jwt/jwt.strategy';
 import { PrismaService } from 'src/db/prisma/prisma.service';
 import { $Enums } from '@prisma/client';
+import { Roles } from './roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -29,7 +30,7 @@ export class RolesGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<$Enums.Role[]>(
-      'roles',
+      Roles,
       context.getHandler(),
     );
     if (!roles) {
