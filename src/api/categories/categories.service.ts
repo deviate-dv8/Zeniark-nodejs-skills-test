@@ -41,7 +41,7 @@ export class CategoriesService {
       },
     });
     if (!category) {
-      throw new NotFoundException('Note Not Found');
+      throw new NotFoundException('Category Not Found');
     }
     return category;
   }
