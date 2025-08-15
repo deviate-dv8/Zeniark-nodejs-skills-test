@@ -16,7 +16,8 @@ describe('NotesService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     userId: 'user-123',
-    categoryId: null,
+    categoryId: '',
+    tagIds: [],
   };
   const sampleDatas: Note[] = [
     {
@@ -26,7 +27,8 @@ describe('NotesService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       userId: 'user-123',
-      categoryId: null,
+      categoryId: '',
+      tagIds: [],
     },
     {
       id: 'r',
@@ -35,7 +37,8 @@ describe('NotesService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       userId: 'user-124',
-      categoryId: null,
+      categoryId: '',
+      tagIds: [],
     },
   ];
   const sampleJwtUser: JwtResponse = {
@@ -99,25 +102,125 @@ describe('NotesService', () => {
     const result = await service.findOne(sampleData.id, sampleJwtUser);
     expect(db.note.findFirst).toHaveBeenCalledWith({
       where: { id: sampleData.id, userId: sampleJwtUser.id },
+      include: {
+        category: true,
+        tags: true,
+      },
     });
     expect(result).toEqual(sampleData);
   });
   it('update() - update should update a note', async () => {
     db.note.findFirst.mockResolvedValue(sampleData);
     db.note.update.mockResolvedValue(sampleData);
+    db.tag.findMany.mockResolvedValue([]);
     const result = await service.update(
       sampleData.id,
-      { title: 'Updated Note', content: 'Updated content' },
+      {
+        title: 'Updated Note',
+        content: 'Updated content',
+        tagIds: [],
+        categoryId: '',
+      },
       sampleJwtUser,
     );
     expect(db.note.update).toHaveBeenCalledWith({
       where: { id: sampleData.id },
-      data: { title: 'Updated Note', content: 'Updated content' },
+      data: {
+        title: 'Updated Note',
+        content: 'Updated content',
+        tagIds: [],
+        categoryId: '',
+      },
+      include: { category: true, tags: true },
     });
     expect(result).toEqual(sampleData);
   });
-  it('update() - update should add categoryId if provided', async () => {});
-  it('update() - update should add tags if provided', async () => {});
+  it('update() - update should add categoryId if provided', async () => {
+    const updatedNote = { ...sampleData, categoryId: 'category-123' };
+    const sampleCategory = {
+      id: 'category-123',
+      name: 'Sample Category',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: sampleJwtUser.id,
+    };
+
+    db.note.findFirst.mockResolvedValue(sampleData);
+    db.category.findUnique.mockResolvedValue(sampleCategory);
+    db.note.update.mockResolvedValue(updatedNote);
+
+    const result = await service.update(
+      sampleData.id,
+      {
+        categoryId: 'category-123',
+        tagIds: undefined,
+        content: undefined,
+        title: undefined,
+      },
+      sampleJwtUser,
+    );
+
+    expect(db.category.findUnique).toHaveBeenCalledWith({
+      where: { id: 'category-123', userId: sampleJwtUser.id },
+    });
+    expect(db.note.update).toHaveBeenCalledWith({
+      where: { id: sampleData.id },
+      data: { categoryId: 'category-123' },
+      include: { category: true, tags: true },
+    });
+    expect(result).toEqual(updatedNote);
+  });
+
+  it('update() - update should add tags if provided', async () => {
+    const updatedNote = { ...sampleData, tagIds: ['tag-1', 'tag-2'] };
+    const updatedNoteDto = {
+      title: sampleData.title,
+      content: sampleData.content,
+      categoryId: sampleData.categoryId ?? undefined, // Convert null to undefined
+      tagIds: ['tag-1', 'tag-2'],
+    };
+    const sampleTags = [
+      {
+        id: 'tag-1',
+        name: 'Tag 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: sampleJwtUser.id,
+        noteIds: [sampleData.id],
+      },
+      {
+        id: 'tag-2',
+        name: 'Tag 2',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: sampleJwtUser.id,
+        noteIds: [sampleData.id],
+      },
+    ];
+
+    db.note.findFirst.mockResolvedValue(sampleData);
+    db.tag.findMany.mockResolvedValue(sampleTags);
+    db.note.update.mockResolvedValue(updatedNote);
+
+    const result = await service.update(
+      sampleData.id,
+      updatedNoteDto,
+      sampleJwtUser,
+    );
+
+    expect(db.tag.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['tag-1', 'tag-2'] },
+        userId: sampleJwtUser.id,
+      },
+    });
+    expect(db.note.update).toHaveBeenCalledWith({
+      where: { id: sampleData.id },
+      data: updatedNoteDto,
+      include: { category: true, tags: true },
+    });
+    expect(result).toEqual(updatedNote);
+  });
   it('remove() - remove should delete a note', async () => {
     db.note.findFirst.mockResolvedValue(sampleData);
     db.note.delete.mockResolvedValue(sampleData);

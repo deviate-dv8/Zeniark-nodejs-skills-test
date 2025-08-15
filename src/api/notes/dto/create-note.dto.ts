@@ -8,10 +8,10 @@ export class CreateNoteDto {
 
   @IsString()
   @IsOptional()
-  categoryId: string;
+  categoryId?: string;
 
   @IsArray()
   @IsOptional()
   @IsString({ each: true })
-  tagIds: string[];
+  tagIds: string[] | undefined;
 }

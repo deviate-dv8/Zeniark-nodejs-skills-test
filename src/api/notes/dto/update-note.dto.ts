@@ -5,17 +5,17 @@ import { IsArray, IsOptional, IsString } from 'class-validator';
 export class UpdateNoteDto extends PartialType(CreateNoteDto) {
   @IsString()
   @IsOptional()
-  title: string;
+  title: string | undefined;
   @IsOptional()
   @IsString()
-  content: string;
+  content: string | undefined;
 
   @IsString()
   @IsOptional()
-  categoryId: string;
+  categoryId: string | undefined;
 
   @IsArray()
   @IsOptional()
   @IsString({ each: true })
-  tagIds: string[];
+  tagIds: string[] | undefined;
 }
