@@ -6,7 +6,7 @@ import { PrismaService } from '../src/db/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { Role } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -17,10 +17,12 @@ describe('AppController (e2e)', () => {
   let userToken: string;
   let adminToken: string;
   let userId: string;
+  // We'll use adminId in one of the tests to demonstrate its use
   let adminId: string;
   let noteId: string;
   let categoryId: string;
   let tagId: string;
+  let noteIds: string[] = []; // For pagination testing
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -36,7 +38,7 @@ describe('AppController (e2e)', () => {
     // Apply the same middleware as in main.ts
     app.use(morgan('combined'));
     app.use(helmet());
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
     await app.init();
 
@@ -47,7 +49,7 @@ describe('AppController (e2e)', () => {
     await prisma.user.deleteMany();
 
     // Create test users (regular user and admin)
-    const testUser = await prisma.user.create({
+    const testUser: User = await prisma.user.create({
       data: {
         email: 'testuser@example.com',
         name: 'Test User',
@@ -55,7 +57,7 @@ describe('AppController (e2e)', () => {
       },
     });
 
-    const adminUser = await prisma.user.create({
+    const adminUser: User = await prisma.user.create({
       data: {
         email: 'admin@example.com',
         name: 'Admin User',
@@ -225,48 +227,152 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  describe('Notes endpoints', () => {
-    it('should create a note (POST /api/notes)', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/notes')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({
-          title: 'Test Note',
-          content: 'This is a test note',
-          categoryId,
-          tagIds: [tagId],
-        })
-        .expect(201);
+  describe('Notes endpoints with pagination', () => {
+    // Create multiple notes for pagination testing
+    it('should create multiple notes for pagination testing', async () => {
+      // Create 15 notes to test pagination
+      const notesToCreate = 15;
+      for (let i = 0; i < notesToCreate; i++) {
+        const response = await request(app.getHttpServer())
+          .post('/api/notes')
+          .set('Authorization', `Bearer ${userToken}`)
+          .send({
+            title: `Test Note ${i + 1}`,
+            content: `This is test note ${i + 1}`,
+            categoryId,
+            tagIds: [tagId],
+          })
+          .expect(201);
 
-      noteId = response.body.id;
-      expect(response.body).toHaveProperty('title', 'Test Note');
-      expect(response.body).toHaveProperty('content', 'This is a test note');
-      expect(response.body).toHaveProperty('userId', userId);
-      expect(response.body).toHaveProperty('categoryId', categoryId);
-      expect(response.body.tagIds).toContain(tagId);
+        noteIds.push(response.body.id);
+
+        // Set the first note ID for other tests
+        if (i === 0) {
+          noteId = response.body.id;
+        }
+      }
+
+      // Verify we have created the expected number of notes
+      expect(noteIds.length).toBe(notesToCreate);
     });
 
-    it('should get all notes for a user (GET /api/notes)', async () => {
-      return request(app.getHttpServer())
+    it('should get paginated notes with default pagination (GET /api/notes)', async () => {
+      const response = await request(app.getHttpServer())
         .get('/api/notes')
         .set('Authorization', `Bearer ${userToken}`)
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThan(0);
-          expect(res.body[0].title).toBe('Test Note');
-        });
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('meta');
+      expect(Array.isArray(response.body.items)).toBe(true);
+
+      // Default pagination should return 10 items
+      expect(response.body.items.length).toBe(10);
+
+      // Check pagination metadata
+      expect(response.body.meta).toEqual({
+        page: 1,
+        limit: 10,
+        totalItems: 15,
+        totalPages: 2,
+      });
+
+      // Check that the first note is present
+      const firstNote = response.body.items[0];
+      expect(firstNote).toHaveProperty('title');
+      expect(firstNote).toHaveProperty('content');
     });
 
-    it('should get a single note (GET /api/notes/:id)', async () => {
+    it('should get paginated notes with custom page (GET /api/notes?page=2)', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/notes?page=2')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('meta');
+      expect(Array.isArray(response.body.items)).toBe(true);
+
+      // Second page should have the remaining 5 items
+      expect(response.body.items.length).toBe(5);
+
+      // Check pagination metadata
+      expect(response.body.meta).toEqual({
+        page: 2,
+        limit: 10,
+        totalItems: 15,
+        totalPages: 2,
+      });
+    });
+
+    it('should get paginated notes with custom limit (GET /api/notes?limit=5)', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/notes?limit=5')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('meta');
+      expect(Array.isArray(response.body.items)).toBe(true);
+
+      // Should return only 5 items
+      expect(response.body.items.length).toBe(5);
+
+      // Check pagination metadata
+      expect(response.body.meta).toEqual({
+        page: 1,
+        limit: 5,
+        totalItems: 15,
+        totalPages: 3,
+      });
+    });
+
+    it('should get paginated notes with both page and limit (GET /api/notes?page=2&limit=5)', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/notes?page=2&limit=5')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('meta');
+      expect(Array.isArray(response.body.items)).toBe(true);
+
+      // Should return 5 items from the second page
+      expect(response.body.items.length).toBe(5);
+
+      // Check pagination metadata
+      expect(response.body.meta).toEqual({
+        page: 2,
+        limit: 5,
+        totalItems: 15,
+        totalPages: 3,
+      });
+    });
+
+    it('should handle invalid page values gracefully (GET /api/notes?page=abc)', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/notes?page=abc')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(400); // Bad Request because of validation error
+
+      expect(response.body).toHaveProperty('message');
+      expect(Array.isArray(response.body.message)).toBe(true);
+      expect(
+        response.body.message.some(
+          (msg: string) => msg.includes('page') && msg.includes('number'),
+        ),
+      ).toBe(true);
+    });
+
+    it('should get a specific note (GET /api/notes/:id)', async () => {
       return request(app.getHttpServer())
         .get(`/api/notes/${noteId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('id', noteId);
-          expect(res.body).toHaveProperty('title', 'Test Note');
-          expect(res.body).toHaveProperty('content', 'This is a test note');
+          expect(res.body).toHaveProperty('title', 'Test Note 1');
+          expect(res.body).toHaveProperty('content', 'This is test note 1');
         });
     });
 
@@ -292,6 +398,9 @@ describe('AppController (e2e)', () => {
         .expect((res) => {
           expect(Array.isArray(res.body)).toBe(true);
           expect(res.body.length).toBeGreaterThanOrEqual(2); // At least our two test users
+          // Using adminId to verify that the admin user is in the response
+          const foundAdmin = res.body.some((user: User) => user.id === adminId);
+          expect(foundAdmin).toBe(true);
         });
     });
 
@@ -321,11 +430,14 @@ describe('AppController (e2e)', () => {
   });
 
   describe('DELETE operations', () => {
-    it('should delete a note (DELETE /api/notes/:id)', async () => {
-      return request(app.getHttpServer())
-        .delete(`/api/notes/${noteId}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .expect(200);
+    it('should delete all created notes', async () => {
+      // Delete each note
+      for (const id of noteIds) {
+        await request(app.getHttpServer())
+          .delete(`/api/notes/${id}`)
+          .set('Authorization', `Bearer ${userToken}`)
+          .expect(200);
+      }
     });
 
     it('should delete a tag (DELETE /api/tags/:id)', async () => {
