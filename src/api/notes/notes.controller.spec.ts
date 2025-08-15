@@ -5,6 +5,7 @@ import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strat
 import { PrismaModule } from 'src/db/prisma/prisma.module';
 import { PrismaService } from 'src/db/prisma/prisma.service';
 import { prismaServiceMock as db } from 'src/test/prisma.service.mock';
+import { RequestJwt } from 'src/utils/RequestJwt';
 
 describe('NotesController', () => {
   let controller: NotesController;
@@ -47,10 +48,16 @@ describe('NotesController', () => {
 
   describe('create', () => {
     it('should call NotesService.create with correct parameters', async () => {
-      const createNoteDto = { title: 'Test Note', content: 'Test Content' };
+      const createNoteDto = {
+        title: 'Test Note',
+        content: 'Test Content',
+        tagIds: ['tag1', 'tag2'],
+      }; // Add tagIds
       mockNotesService.create.mockResolvedValue({ id: '1', ...createNoteDto });
 
-      const result = await controller.create(createNoteDto, { user });
+      const result = await controller.create(createNoteDto, {
+        user,
+      } as RequestJwt);
       expect(service.create).toHaveBeenCalledWith(createNoteDto, user);
       expect(result).toEqual({ id: '1', ...createNoteDto });
     });
@@ -61,7 +68,7 @@ describe('NotesController', () => {
       const notes = [{ id: '1', title: 'Note 1' }];
       mockNotesService.findAllByUser.mockResolvedValue(notes);
 
-      const result = await controller.findAllByUser({ user });
+      const result = await controller.findAllByUser({ user } as RequestJwt);
       expect(service.findAllByUser).toHaveBeenCalledWith(user);
       expect(result).toEqual(notes);
     });
@@ -73,7 +80,7 @@ describe('NotesController', () => {
       const note = { id: '1', title: 'Note 1' };
       mockNotesService.findOne.mockResolvedValue(note);
 
-      const result = await controller.findOne(id, { user });
+      const result = await controller.findOne(id, { user } as RequestJwt);
       expect(service.findOne).toHaveBeenCalledWith(id, user);
       expect(result).toEqual(note);
     });
@@ -85,11 +92,15 @@ describe('NotesController', () => {
       const updateNoteDto = {
         title: 'Updated Note',
         content: 'Updated Content',
+        tagIds: ['tag1', 'tag2'],
+        categoryId: undefined,
       };
       const updatedNote = { id: '1', ...updateNoteDto };
       mockNotesService.update.mockResolvedValue(updatedNote);
 
-      const result = await controller.update(id, updateNoteDto, { user });
+      const result = await controller.update(id, updateNoteDto, {
+        user,
+      } as RequestJwt);
       expect(service.update).toHaveBeenCalledWith(id, updateNoteDto, user);
       expect(result).toEqual(updatedNote);
     });
@@ -100,7 +111,7 @@ describe('NotesController', () => {
       const id = '1';
       mockNotesService.remove.mockResolvedValue({ id: '1' });
 
-      const result = await controller.remove(id, { user });
+      const result = await controller.remove(id, { user } as RequestJwt);
       expect(service.remove).toHaveBeenCalledWith(id, user);
       expect(result).toEqual({ id: '1' });
     });

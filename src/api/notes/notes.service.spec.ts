@@ -77,6 +77,8 @@ describe('NotesService', () => {
       {
         title: sampleData.title,
         content: sampleData.content,
+        tagIds: undefined,
+        categoryId: undefined,
       },
       sampleJwtUser,
     );
