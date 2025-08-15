@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateNoteDto {
   @IsString()
@@ -9,4 +9,9 @@ export class CreateNoteDto {
   @IsString()
   @IsOptional()
   categoryId: string;
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  tagIds: string[];
 }

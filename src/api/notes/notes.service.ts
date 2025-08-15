@@ -16,12 +16,28 @@ export class NotesService {
         throw new NotFoundException('Category Not Found');
       }
     }
-    return this.db.note.create({
+    if (createNoteDto.tagIds) {
+      console.log(createNoteDto.tagIds);
+      const tags = await this.db.tag.findMany({
+        where: {
+          id: {
+            in: createNoteDto.tagIds,
+          },
+          userId: user.id,
+        },
+      });
+      if (tags.length !== createNoteDto.tagIds.length) {
+        throw new NotFoundException('One or more Tags Not Found');
+      }
+    }
+    const note = await this.db.note.create({
       data: {
         ...createNoteDto,
         userId: user.id,
       },
     });
+
+    return note;
   }
 
   async findAllByUser(user: JwtResponse) {
@@ -45,6 +61,10 @@ export class NotesService {
         id,
         ...(userInfo.role == 'ADMIN' ? null : { userId: user.id }),
       },
+      include: {
+        category: true,
+        tags: true,
+      },
     });
     if (!note) {
       throw new NotFoundException('Note Not Found');
@@ -62,7 +82,20 @@ export class NotesService {
         throw new NotFoundException('Category Not Found');
       }
     }
-    return this.db.note.update({
+    if (updateNoteDto.tagIds) {
+      const tags = await this.db.tag.findMany({
+        where: {
+          id: {
+            in: updateNoteDto.tagIds,
+          },
+          userId: user.id,
+        },
+      });
+      if (tags.length !== updateNoteDto.tagIds.length) {
+        throw new NotFoundException('One or more Tags Not Found');
+      }
+    }
+    const newNote = await this.db.note.update({
       where: {
         id: note.id,
       },
@@ -72,6 +105,7 @@ export class NotesService {
         tags: true,
       },
     });
+    return newNote;
   }
 
   async remove(id: string, user: JwtResponse) {
