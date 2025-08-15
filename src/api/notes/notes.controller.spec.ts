@@ -6,6 +6,8 @@ import { PrismaModule } from 'src/db/prisma/prisma.module';
 import { PrismaService } from 'src/db/prisma/prisma.service';
 import { prismaServiceMock as db } from 'src/test/prisma.service.mock';
 import { RequestJwt } from 'src/utils/RequestJwt';
+import { PaginationDto } from './dto/pagination.dto';
+import { PaginatedResponse } from './interfaces/paginated-response.interface';
 
 describe('NotesController', () => {
   let controller: NotesController;
@@ -17,6 +19,7 @@ describe('NotesController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    findAll: jest.fn(),
   };
 
   const user: JwtResponse = { id: '123', email: 'email@example.com' };
@@ -64,13 +67,50 @@ describe('NotesController', () => {
   });
 
   describe('findAllByUser', () => {
-    it('should call NotesService.findAllByUser with correct parameters', async () => {
+    it('should call NotesService.findAllByUser with default pagination parameters', async () => {
+      const paginationDto: PaginationDto = {};
       const notes = [{ id: '1', title: 'Note 1' }];
-      mockNotesService.findAllByUser.mockResolvedValue(notes);
+      const paginatedResponse: PaginatedResponse<any> = {
+        items: notes,
+        meta: {
+          page: 1,
+          limit: 10,
+          totalItems: 1,
+          totalPages: 1,
+        },
+      };
 
-      const result = await controller.findAllByUser({ user } as RequestJwt);
-      expect(service.findAllByUser).toHaveBeenCalledWith(user);
-      expect(result).toEqual(notes);
+      mockNotesService.findAllByUser.mockResolvedValue(paginatedResponse);
+
+      const result = await controller.findAllByUser(
+        { user } as RequestJwt,
+        paginationDto,
+      );
+      expect(service.findAllByUser).toHaveBeenCalledWith(user, paginationDto);
+      expect(result).toEqual(paginatedResponse);
+    });
+
+    it('should call NotesService.findAllByUser with custom pagination parameters', async () => {
+      const paginationDto: PaginationDto = { page: 2, limit: 5 };
+      const notes = [{ id: '6', title: 'Note 6' }];
+      const paginatedResponse: PaginatedResponse<any> = {
+        items: notes,
+        meta: {
+          page: 2,
+          limit: 5,
+          totalItems: 10,
+          totalPages: 2,
+        },
+      };
+
+      mockNotesService.findAllByUser.mockResolvedValue(paginatedResponse);
+
+      const result = await controller.findAllByUser(
+        { user } as RequestJwt,
+        paginationDto,
+      );
+      expect(service.findAllByUser).toHaveBeenCalledWith(user, paginationDto);
+      expect(result).toEqual(paginatedResponse);
     });
   });
 

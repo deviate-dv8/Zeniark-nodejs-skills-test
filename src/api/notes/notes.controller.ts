@@ -8,7 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
-  Request,
+  Query,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -19,6 +19,7 @@ import updateValidationPipe from 'src/utils/updateValidationPipe';
 import { Roles } from 'src/guards/roles-guard/roles.decorator';
 import { RolesGuard } from 'src/guards/roles-guard/roles.guard';
 import type { RequestJwt } from 'src/utils/RequestJwt';
+import { PaginationDto } from './dto/pagination.dto';
 
 @Controller('api/notes')
 export class NotesController {
@@ -36,9 +37,10 @@ export class NotesController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAllByUser(@Req() req: RequestJwt) {
-    return this.notesService.findAllByUser(req.user);
+  findAllByUser(@Req() req: RequestJwt, @Query() paginationDto: PaginationDto) {
+    return this.notesService.findAllByUser(req.user, paginationDto);
   }
+
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(['ADMIN'])

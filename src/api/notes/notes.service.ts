@@ -3,6 +3,9 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 import { JwtResponse } from '../authentication/passport-strategies/jwt/jwt.strategy';
 import { PrismaService } from 'src/db/prisma/prisma.service';
+import { PaginationDto } from './dto/pagination.dto';
+import { PaginatedResponse } from './interfaces/paginated-response.interface';
+import { Note } from '@prisma/client';
 
 @Injectable()
 export class NotesService {
@@ -40,13 +43,40 @@ export class NotesService {
     return note;
   }
 
-  async findAllByUser(user: JwtResponse) {
-    return this.db.note.findMany({
-      where: {
-        userId: user.id,
+  async findAllByUser(
+    user: JwtResponse,
+    paginationDto: PaginationDto = { page: 1, limit: 10 },
+  ): Promise<PaginatedResponse<Note>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [notes, total] = await Promise.all([
+      this.db.note.findMany({
+        where: {
+          userId: user.id,
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.db.note.count({
+        where: {
+          userId: user.id,
+        },
+      }),
+    ]);
+
+    return {
+      items: notes,
+      meta: {
+        page,
+        limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
   }
+
   async findAll() {
     return this.db.note.findMany();
   }

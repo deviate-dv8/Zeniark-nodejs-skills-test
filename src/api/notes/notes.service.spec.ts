@@ -89,14 +89,74 @@ describe('NotesService', () => {
     const result = await service.findAll();
     expect(result).toEqual(sampleDatas);
   });
-  it('findAllByUser() - findAllByUser should return all notes based on user', async () => {
-    db.note.findMany.mockResolvedValue([sampleData]);
-    const result = await service.findAllByUser(sampleJwtUser);
-    expect(db.note.findMany).toHaveBeenCalledWith({
-      where: { userId: sampleJwtUser.id },
+
+  describe('findAllByUser()', () => {
+    it('should return paginated notes for a user with default pagination', async () => {
+      const mockNotes = [sampleData];
+      db.note.findMany.mockResolvedValue(mockNotes);
+      db.note.count.mockResolvedValue(1);
+
+      const result = await service.findAllByUser(sampleJwtUser);
+
+      expect(db.note.findMany).toHaveBeenCalledWith({
+        where: { userId: sampleJwtUser.id },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(db.note.count).toHaveBeenCalledWith({
+        where: { userId: sampleJwtUser.id },
+      });
+
+      expect(result).toEqual({
+        items: mockNotes,
+        meta: {
+          page: 1,
+          limit: 10,
+          totalItems: 1,
+          totalPages: 1,
+        },
+      });
     });
-    expect(result).toEqual([sampleData]);
+
+    it('should return paginated notes for a user with custom pagination', async () => {
+      // Create 15 mock notes
+      const mockNotes = Array(5)
+        .fill(null)
+        .map((_, i) => ({
+          ...sampleData,
+          id: `note-${i + 11}`,
+          title: `Note ${i + 11}`,
+        }));
+
+      db.note.findMany.mockResolvedValue(mockNotes);
+      db.note.count.mockResolvedValue(15);
+
+      const result = await service.findAllByUser(sampleJwtUser, {
+        page: 3,
+        limit: 5,
+      });
+
+      expect(db.note.findMany).toHaveBeenCalledWith({
+        where: { userId: sampleJwtUser.id },
+        skip: 10, // (3-1)*5 = 10
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(result).toEqual({
+        items: mockNotes,
+        meta: {
+          page: 3,
+          limit: 5,
+          totalItems: 15,
+          totalPages: 3,
+        },
+      });
+    });
   });
+
   it('findOne() - findOne should return a note by ID)', async () => {
     db.note.findFirst.mockResolvedValue(sampleData);
     db.user.findUnique.mockResolvedValue(sampleUser);
